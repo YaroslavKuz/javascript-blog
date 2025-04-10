@@ -44,7 +44,8 @@ function titleClickHandler(event){
 const optArticleSelector = '.post',
   optTitleSelector = '.post-title',
   optTitleListSelector = '.titles',
-  optArticleTagsSelector = '.post-tags .list';
+  optArticleTagsSelector = '.post-tags .list',
+  optArticleAuthorSelector = '.post-author';
 
 function generateTitleLinks(customSelector = ''){
 
@@ -193,12 +194,12 @@ function tagClickHandler(event){
 
 function addClickListenersToTags(){
   /* find all links to tags */
-
+  const tagLinks = document.querySelectorAll('.post-tags a');
   /* START LOOP: for each link */
-
-  /* add tagClickHandler as event listener for that link */
-  const tagLinks = document.querySelectorAll('.post-tags a'); 
   for(let link of tagLinks){
+  /* add tagClickHandler as event listener for that link */
+ 
+  
     link.addEventListener('click', tagClickHandler);
 
   /* END LOOP: for each link */
@@ -206,3 +207,82 @@ function addClickListenersToTags(){
 }
 
 addClickListenersToTags();
+
+function generateAuthors() {
+  // Знайдемо всі статті
+  // Find all articles
+  const articles = document.querySelectorAll('article');
+  console.log('articles:',articles);
+
+  // Для кожної статті генеруємо посилання на автора
+  // For each article, generate an author link
+  for (let article of articles) {
+    // Отримуємо ім'я автора з атрибута data-author
+    // Get the author's name from the data-author attribute
+    const author = article.getAttribute('data-author');
+    console.log('Author:', author);
+    
+    // Знайдемо обгортку для автора
+    // Find the wrapper for the author
+    const autoWraper = article.querySelector(optArticleAuthorSelector);
+    console.log('autoWraper', autoWraper);
+
+    // Створюємо HTML з лінком на автора
+    // Create the HTML with a link to the author
+    const authorHTML = '<a href="#author-' + author + '">' + author + '</a>';
+
+    // Вставляємо цей HTML у обгортку
+    // Insert this HTML into the wrapper
+
+    autoWraper.innerHTML = authorHTML;
+   
+  }
+}
+generateAuthors();
+
+function authorClickHandler(event) {
+  event.preventDefault();
+
+  // Отримуємо натиснуту на посилання елемент
+  // Get the clicked link element
+  const clickedElement = this;
+  
+  // Отримуємо href атрибут з посилання
+  // Get the href attribute from the link
+  const href = clickedElement.getAttribute('href');
+
+  // Витягуємо ім'я автора з href
+  // Extract the author's name from the href
+  const author = href.replace('#author-', '');
+
+  // Видаляємо клас "active" з усіх авторських посилань
+  // Remove the "active" class from all author links
+  const activeAuthorLinks = document.querySelectorAll('a.active[href^="#author-"]');
+  for (let link of activeAuthorLinks) {
+    link.classList.remove('active');
+  }
+
+  // Додаємо клас "active" до натиснутого посилання
+  // Add the "active" class to the clicked link
+  clickedElement.classList.add('active');
+
+  // Генеруємо список статей лише з цим автором
+  // Generate the list of articles with this author only
+  generateTitleLinks('[data-author="' + author + '"]');
+
+}
+
+function addClickListenersToAuthors (){
+
+  // Знайдемо всі посилання на авторів
+  // Find all links to authors
+  const authorLinks =document.querySelectorAll('.post-author a');
+
+  // Для кожного посилання на автора додаємо обробник події
+  // For each author link, add an event listener
+  for( let link of authorLinks){
+    link.addEventListener('click', authorClickHandler);
+  }
+
+}
+addClickListenersToAuthors ();
