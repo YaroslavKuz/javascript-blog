@@ -45,7 +45,11 @@ const optArticleSelector = '.post',
   optTitleSelector = '.post-title',
   optTitleListSelector = '.titles',
   optArticleTagsSelector = '.post-tags .list',
-  optArticleAuthorSelector = '.post-author';
+  optArticleAuthorSelector = '.post-author',
+  optTagsListSelector ='.list.tags ',
+  optCloudClassCount = 5,
+  optCloudClassPrefix = 'tag-size-',
+  optAuthorsListSelector = '.list.authors';
 
 function generateTitleLinks(customSelector = ''){
 
@@ -97,7 +101,52 @@ function generateTitleLinks(customSelector = ''){
 
 generateTitleLinks();
 
+function calculateTagsParams(tags) {
+  // Створюємо об'єкт для зберігання мінімального та максимального значення
+  const params = { max: 0, min: 999999 };
+
+  // Проходимо по кожному тегу в об'єкті
+  for (let tag in tags) {
+    // Якщо значення більше за поточний максимум — оновлюємо
+    if (tags[tag] > params.max) {
+      params.max = tags[tag];
+    }
+
+    // Якщо значення менше за поточний мінімум — оновлюємо
+    if (tags[tag] < params.min) {
+      params.min = tags[tag];
+    }
+  }
+
+  // Повертаємо об'єкт з min та max
+  return params;
+}
+calculateTagsParams();
+
+function calculateTagClass(count , params) {
+  const normalizedCount = count - params.min;
+  const normalizedMax = params.max - params.min;
+
+  // Обчислення відсотка
+  const percentage = normalizedCount / normalizedMax;
+
+  // Обчислення номера класу (1 до 5 для 5 класів)
+  const classNumber = Math.floor(percentage * (optCloudClassCount - 1) + 1);
+
+  // Повертаємо клас з префіксом
+  
+  return optCloudClassPrefix + classNumber;
+ 
+}
+
+
 function generateTags(){
+
+  
+
+  /* [NEW] create a new variable allTags with an empty object */
+  let allTags = {};
+
   /* find all articles */
   const articles = document.querySelectorAll('article');
   console.log('All articles', articles);
@@ -110,6 +159,7 @@ function generateTags(){
     /* find tags wrapper */
     const tagsWrapper = article.querySelector(optArticleTagsSelector);
     console.log('tagsWrapper', tagsWrapper);
+    
 
     /* make html variable with empty string */
     let html = '';
@@ -134,14 +184,47 @@ function generateTags(){
       /* add generated code to html variable */
       html = html + tagHTML;
 
+      /* [NEW] check if this link is NOT already in allTags */
+      if(!allTags.hasOwnProperty(tag)) {
+
+        /* [NEW] add generated code to allTags array */
+        allTags[tag] = 1;
+      }else {
+        allTags[tag]++;
+      }
+
       /* END LOOP: for each tag */
     }
     /* insert HTML of all the links into the tags wrapper */
     
     tagsWrapper.innerHTML = html;
     /* END LOOP: for every article: */
+
     
   }
+
+  /* [NEW] find list of tags in right column */
+  const tagList = document.querySelector(optTagsListSelector);
+
+  /* [NEW] add html from allTags to tagList */
+  // tagList.innerHTML = allTags.join(' ');
+  const tagsParams  = calculateTagsParams(allTags);
+  console.log('tagsParams:',tagsParams);
+
+  // * [NEW] create variable for all links HTML code */
+  let allTagsHTML ='';
+
+  // *[NEW] START LOOP: for each tag in allTags: */
+  for (let tag in allTags){
+    // *[NEW] generate code of a link and add it to allTagsHTML */
+    const className = calculateTagClass(allTags[tag], tagsParams);
+    allTagsHTML += '<li><a href="#tag-' + tag + '" class="' + className + '">' + tag + ' (' + allTags[tag] + ')</a></li>';
+
+  }
+  // *[NEW] END LOOP: for each tag in allTags:*/
+
+  // *[NEW] add html from allTagsHTML to tagList */
+  tagList.innerHTML = allTagsHTML;
 
 }
 generateTags();
@@ -195,8 +278,13 @@ function tagClickHandler(event){
 function addClickListenersToTags(){
   /* find all links to tags */
   const tagLinks = document.querySelectorAll('.post-tags a');
+
+  const sidebarTagLinks = document.querySelectorAll('.list.tags a');
+
+  const allTagsLinks = [...tagLinks, ...sidebarTagLinks];
+
   /* START LOOP: for each link */
-  for(let link of tagLinks){
+  for(let link of allTagsLinks){
   /* add tagClickHandler as event listener for that link */
  
   
@@ -212,6 +300,7 @@ function generateAuthors() {
   // Знайдемо всі статті
   // Find all articles
   const articles = document.querySelectorAll('article');
+  let allAuthors = {};
   console.log('articles:',articles);
 
   // Для кожної статті генеруємо посилання на автора
@@ -235,9 +324,25 @@ function generateAuthors() {
     // Insert this HTML into the wrapper
 
     autoWraper.innerHTML = authorHTML;
+
+    if (!allAuthors.hasOwnProperty(author)) {
+      allAuthors[author] = 1;
+    } else {
+      allAuthors[author]++;
+    }
    
   }
+
+  const authorsList = document.querySelector(optAuthorsListSelector);
+  let allAuthorsHTML = '';
+
+  for (let author in allAuthors) {
+    allAuthorsHTML += '<li><a href="#author-' + author + '">' + author + ' (' + allAuthors[author] + ')</a></li>';
+  }
+
+  authorsList.innerHTML = allAuthorsHTML;
 }
+
 generateAuthors();
 
 function authorClickHandler(event) {
@@ -257,14 +362,14 @@ function authorClickHandler(event) {
 
   // Видаляємо клас "active" з усіх авторських посилань
   // Remove the "active" class from all author links
-  const activeAuthorLinks = document.querySelectorAll('a.active[href^="#author-"]');
+  const activeAuthorLinks = document.querySelectorAll('a.active[href^="#author-"], .list.authors a.active');
   for (let link of activeAuthorLinks) {
     link.classList.remove('active');
   }
 
   // Додаємо клас "active" до натиснутого посилання
   // Add the "active" class to the clicked link
-  clickedElement.classList.add('active');
+  clickedElement.classList.remove('active');
 
   // Генеруємо список статей лише з цим автором
   // Generate the list of articles with this author only
@@ -278,9 +383,16 @@ function addClickListenersToAuthors (){
   // Find all links to authors
   const authorLinks =document.querySelectorAll('.post-author a');
 
+  // І всі посилання на авторів у правій колонці
+  const sidebarAuthorLinks = document.querySelectorAll('.list.authors a');
+
+  // Об'єднуємо обидва набори посилань
+  const allAuthorLinks = [...authorLinks, ...sidebarAuthorLinks];
+  console.log('allAuthorLinks', allAuthorLinks);
+
   // Для кожного посилання на автора додаємо обробник події
   // For each author link, add an event listener
-  for( let link of authorLinks){
+  for( let link of allAuthorLinks){
     link.addEventListener('click', authorClickHandler);
   }
 
